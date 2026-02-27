@@ -1,36 +1,35 @@
 import { useState, useEffect } from 'react'
 import Editor from './components/Editor'
 import DocumentList from './components/DocumentList'
+import SharedWithMe from './components/SharedWithMe'
+import Contacts from './components/Contacts'
 import Header from './components/Header'
-import { supabase } from './lib/supabase'
+import { api } from './lib/api'
 import './App.css'
 
 function App() {
   const [documents, setDocuments] = useState([])
   const [currentDocId, setCurrentDocId] = useState(null)
-  const [showDocList, setShowDocList] = useState(true)
+  const [activeTab, setActiveTab] = useState('my-docs') // 'my-docs' | 'shared' | 'contacts'
+  const [showEditor, setShowEditor] = useState(false)
   const [user, setUser] = useState(null)
 
   useEffect(() => {
-    fetchDocuments()
     checkUser()
   }, [])
 
-  const checkUser = async () => {
-    const storedUser = localStorage.getItem('user')
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    }
+  useEffect(() => {
+    if (user) fetchDocuments()
+  }, [user, activeTab])
+
+  const checkUser = () => {
+    const stored = localStorage.getItem('user')
+    if (stored) setUser(JSON.parse(stored))
   }
 
   const fetchDocuments = async () => {
     try {
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .order('updated_at', { ascending: false })
-
-      if (error) throw error
+      const data = await api.getDocuments(user?.name)
       setDocuments(data || [])
     } catch (error) {
       console.error('Error fetching documents:', error)
@@ -39,23 +38,14 @@ function App() {
 
   const handleCreateDocument = async () => {
     try {
-      const newDoc = {
-        title: 'Untitled Document',
-        content: '# New Document\n\nStart typing here...',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-
-      const { data, error } = await supabase
-        .from('documents')
-        .insert([newDoc])
-        .select()
-
-      if (error) throw error
-      if (data && data[0]) {
-        setDocuments([data[0], ...documents])
-        setCurrentDocId(data[0].id)
-        setShowDocList(false)
+      const data = await api.createDocument(
+        'Untitled Document',
+        '# New Document\n\nStart typing here...',
+        user?.name
+      )
+      if (data) {
+        setCurrentDocId(data.id)
+        setShowEditor(true)
       }
     } catch (error) {
       console.error('Error creating document:', error)
@@ -64,47 +54,81 @@ function App() {
 
   const handleOpenDocument = (docId) => {
     setCurrentDocId(docId)
-    setShowDocList(false)
+    setShowEditor(true)
+  }
+
+  const handleDeleteDocument = async (docId) => {
+    if (!confirm('Are you sure you want to delete this document?')) return
+    try {
+      await api.deleteDocument(docId)
+      setDocuments(documents.filter(d => d.id !== docId))
+    } catch (error) {
+      console.error('Error deleting document:', error)
+    }
   }
 
   const handleBackToList = () => {
-    setShowDocList(true)
+    setShowEditor(false)
     setCurrentDocId(null)
     fetchDocuments()
   }
 
-  const handleSetUser = (userName) => {
+  const handleSetUser = async (userName) => {
     const userData = { name: userName, color: generateRandomColor() }
     localStorage.setItem('user', JSON.stringify(userData))
     setUser(userData)
+    try {
+      await api.registerUser(userName, userData.color)
+    } catch (e) {
+      // ignore if user already exists
+    }
   }
 
   const generateRandomColor = () => {
-    const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
+    const colors = ['#1a73e8', '#ea4335', '#34a853', '#fbbc04', '#a142f4', '#e37400']
     return colors[Math.floor(Math.random() * colors.length)]
   }
 
-  return (
-    <div className="app">
-      <Header 
-        user={user} 
-        onSetUser={handleSetUser}
-        onBackToList={!showDocList ? handleBackToList : null}
-      />
-      
-      {showDocList ? (
-        <DocumentList
-          documents={documents}
-          onCreateDocument={handleCreateDocument}
-          onOpenDocument={handleOpenDocument}
-        />
-      ) : (
+  const renderContent = () => {
+    if (showEditor) {
+      return (
         <Editor
           documentId={currentDocId}
           user={user}
           onUpdateTitle={fetchDocuments}
         />
-      )}
+      )
+    }
+
+    switch (activeTab) {
+      case 'shared':
+        return <SharedWithMe user={user} onOpenDocument={handleOpenDocument} />
+      case 'contacts':
+        return <Contacts user={user} onOpenDocument={handleOpenDocument} />
+      default:
+        return (
+          <DocumentList
+            documents={documents}
+            user={user}
+            onCreateDocument={handleCreateDocument}
+            onOpenDocument={handleOpenDocument}
+            onDeleteDocument={handleDeleteDocument}
+            onRefresh={fetchDocuments}
+          />
+        )
+    }
+  }
+
+  return (
+    <div className="app">
+      <Header
+        user={user}
+        onSetUser={handleSetUser}
+        onBackToList={showEditor ? handleBackToList : null}
+        activeTab={activeTab}
+        onTabChange={showEditor ? null : setActiveTab}
+      />
+      {renderContent()}
     </div>
   )
 }

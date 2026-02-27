@@ -33,10 +33,8 @@ Look for your local IP (usually starts with 192.168.x.x or 10.0.x.x)
 
 ### On the Server Computer:
 
-1. Create `client/.env` file:
+1. Create `client/.env` file (optional, auto-detected):
 ```env
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 VITE_SERVER_URL=http://YOUR_LOCAL_IP:3001
 ```
 Replace `YOUR_LOCAL_IP` with your actual IP (e.g., `http://192.168.1.100:3001`)
@@ -44,8 +42,7 @@ Replace `YOUR_LOCAL_IP` with your actual IP (e.g., `http://192.168.1.100:3001`)
 2. Create `server/.env` file:
 ```env
 PORT=3001
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_KEY=your_supabase_service_role_key
+MONGODB_URI=mongodb://127.0.0.1:27017/collab-docs
 ```
 
 ---
@@ -233,7 +230,7 @@ Backend Server (Socket.io): `http://192.168.1.100:3001`
 
 - [ ] Found local IP address of server computer
 - [ ] Updated `client/.env` with `VITE_SERVER_URL`
-- [ ] Updated `server/.env` with Supabase credentials
+- [ ] Updated `server/.env` with MongoDB URI
 - [ ] Created firewall rules for ports 3000 and 3001
 - [ ] Started both frontend and backend servers
 - [ ] Verified health endpoint: `http://SERVER_IP:3001/health`

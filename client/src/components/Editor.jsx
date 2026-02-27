@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import * as Y from 'yjs'
 import { io } from 'socket.io-client'
-import { supabase } from '../lib/supabase'
+import { api } from '../lib/api'
 import './Editor.css'
 
 function Editor({ documentId, user, onUpdateTitle }) {
@@ -25,13 +25,7 @@ function Editor({ documentId, user, onUpdateTitle }) {
   const saveDocumentToDb = useCallback(
     debounce(async (text) => {
       try {
-        await supabase
-          .from('documents')
-          .update({ 
-            content: text, 
-            updated_at: new Date().toISOString() 
-          })
-          .eq('id', documentId)
+        await api.updateDocument(documentId, { content: text })
         console.log('Document saved')
       } catch (error) {
         console.error('Error saving document:', error)
@@ -45,7 +39,6 @@ function Editor({ documentId, user, onUpdateTitle }) {
 
     let mounted = true
 
-    // Helper functions
     const broadcastAwareness = (socket) => {
       socket.emit('awareness', {
         documentId,
@@ -94,8 +87,8 @@ function Editor({ documentId, user, onUpdateTitle }) {
     }
     yText.observe(observer)
 
-    // Connect to Socket.io server
-    const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+    // Connect to Socket.io server using auto-detected URL
+    const serverUrl = api.getSocketUrl()
     const socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -106,9 +99,7 @@ function Editor({ documentId, user, onUpdateTitle }) {
 
     socket.on('connect', () => {
       console.log('Connected to server:', socket.id)
-      if (mounted) {
-        setConnectionStatus('connected')
-      }
+      if (mounted) setConnectionStatus('connected')
       
       // Request initial sync
       socket.emit('sync-step-1', { documentId })
@@ -119,18 +110,12 @@ function Editor({ documentId, user, onUpdateTitle }) {
 
     socket.on('disconnect', () => {
       console.log('Disconnected from server')
-      if (mounted) {
-        setConnectionStatus('disconnected')
-      }
+      if (mounted) setConnectionStatus('disconnected')
     })
 
     socket.on('connect_error', (error) => {
-      console.error('Connection error:', error)
-      console.error('Server URL:', serverUrl)
-      console.error('Make sure VITE_SERVER_URL in .env is set to your computer\'s IP, not router IP')
-      if (mounted) {
-        setConnectionStatus('error')
-      }
+      console.error('Connection error:', error.message)
+      if (mounted) setConnectionStatus('error')
     })
 
     // Receive initial document state
@@ -139,30 +124,23 @@ function Editor({ documentId, user, onUpdateTitle }) {
       isLoadingRef.current = true
       try {
         Y.applyUpdate(yDoc, new Uint8Array(update))
-        if (mounted) {
-          setContent(yText.toString())
-        }
+        if (mounted) setContent(yText.toString())
       } catch (error) {
         console.error('Error applying initial state:', error)
       } finally {
-        setTimeout(() => {
-          isLoadingRef.current = false
-        }, 100)
+        setTimeout(() => { isLoadingRef.current = false }, 100)
       }
     })
 
     // Receive updates from other clients
     socket.on('update', ({ update }) => {
-      console.log('Received update from another client')
       isLoadingRef.current = true
       try {
         Y.applyUpdate(yDoc, new Uint8Array(update))
       } catch (error) {
         console.error('Error applying update:', error)
       } finally {
-        setTimeout(() => {
-          isLoadingRef.current = false
-        }, 50)
+        setTimeout(() => { isLoadingRef.current = false }, 50)
       }
     })
 
@@ -179,9 +157,7 @@ function Editor({ documentId, user, onUpdateTitle }) {
 
     // Broadcast awareness every 5 seconds
     const awarenessInterval = setInterval(() => {
-      if (socket.connected) {
-        broadcastAwareness(socket)
-      }
+      if (socket.connected) broadcastAwareness(socket)
     }, 5000)
 
     return () => {
@@ -195,16 +171,8 @@ function Editor({ documentId, user, onUpdateTitle }) {
 
   const loadDocument = async () => {
     try {
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('id', documentId)
-        .single()
-
-      if (error) throw error
-      if (data) {
-        setTitle(data.title)
-      }
+      const data = await api.getDocument(documentId)
+      if (data) setTitle(data.title)
     } catch (error) {
       console.error('Error loading document:', error)
     }
@@ -213,13 +181,7 @@ function Editor({ documentId, user, onUpdateTitle }) {
   const handleTitleChange = async (newTitle) => {
     setTitle(newTitle)
     try {
-      await supabase
-        .from('documents')
-        .update({ 
-          title: newTitle, 
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', documentId)
+      await api.updateDocument(documentId, { title: newTitle })
       onUpdateTitle()
     } catch (error) {
       console.error('Error updating title:', error)
@@ -243,10 +205,17 @@ function Editor({ documentId, user, onUpdateTitle }) {
     }
   }
 
+  const statusLabel = connectionStatus === 'connected' 
+    ? 'All changes saved' 
+    : connectionStatus === 'connecting' 
+    ? 'Connecting...' 
+    : 'Offline'
+
   return (
-    <div className="editor-container">
-      <div className="editor-header">
-        <div className="title-section">
+    <div className="editor-page">
+      {/* Toolbar */}
+      <div className="editor-toolbar">
+        <div className="toolbar-left">
           {isEditingTitle ? (
             <input
               type="text"
@@ -262,29 +231,27 @@ function Editor({ documentId, user, onUpdateTitle }) {
                   handleTitleChange(title)
                 }
               }}
-              className="title-input"
+              className="toolbar-title-input"
               autoFocus
             />
           ) : (
-            <h2 onClick={() => setIsEditingTitle(true)} className="title">
+            <h1 onClick={() => setIsEditingTitle(true)} className="toolbar-title">
               {title}
-            </h2>
+            </h1>
           )}
+          <span className={`toolbar-status ${connectionStatus}`}>
+            <span className="status-dot"></span>
+            {statusLabel}
+          </span>
         </div>
 
-        <div className="editor-controls">
-          <div className="connection-status">
-            <span className={`status-indicator ${connectionStatus}`}>
-              {connectionStatus === 'connected' ? '🟢' : connectionStatus === 'connecting' ? '🟡' : '🔴'}
-            </span>
-          </div>
-          
-          <div className="active-users">
+        <div className="toolbar-right">
+          <div className="toolbar-users">
             {Array.from(activeUsers.values()).map((u, i) => (
               <div
                 key={i}
-                className="user-avatar small"
-                style={{ backgroundColor: u.color }}
+                className="toolbar-avatar"
+                style={{ '--avatar-color': u.color }}
                 title={u.name}
               >
                 {u.name.charAt(0).toUpperCase()}
@@ -294,30 +261,49 @@ function Editor({ documentId, user, onUpdateTitle }) {
           
           <button
             onClick={() => setShowPreview(!showPreview)}
-            className="preview-toggle"
+            className={`toolbar-btn ${showPreview ? 'active' : ''}`}
           >
-            {showPreview ? '📝 Edit' : '👁️ Preview'}
+            {showPreview ? (
+              <>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                Edit
+              </>
+            ) : (
+              <>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                Preview
+              </>
+            )}
           </button>
         </div>
       </div>
 
-      <div className="editor-content">
-        {showPreview ? (
-          <div className="preview-pane">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {content}
-            </ReactMarkdown>
-          </div>
-        ) : (
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={handleTextChange}
-            className="markdown-editor"
-            placeholder="Start typing your markdown here..."
-            spellCheck="false"
-          />
-        )}
+      {/* Editor */}
+      <div className="editor-canvas">
+        <div className="editor-paper">
+          {showPreview ? (
+            <div className="preview-content">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {content}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={handleTextChange}
+              className="editor-textarea"
+              placeholder="Start typing..."
+              spellCheck="false"
+            />
+          )}
+        </div>
       </div>
     </div>
   )
