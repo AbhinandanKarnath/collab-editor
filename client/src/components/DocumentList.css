@@ -111,7 +111,6 @@
 .doc-card {
   border: 1px solid var(--gray-300);
   border-radius: var(--radius);
-  overflow: hidden;
   background: var(--white);
   transition: box-shadow 0.2s, border-color 0.2s;
   position: relative;
@@ -128,6 +127,8 @@
   border-bottom: 1px solid var(--gray-200);
   padding: 28px 24px;
   cursor: pointer;
+  border-radius: var(--radius) var(--radius) 0 0;
+  overflow: hidden;
 }
 
 .doc-card-preview-lines {
