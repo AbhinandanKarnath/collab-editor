@@ -12,6 +12,10 @@ const documentSchema = new mongoose.Schema(
     owner:       { type: String, default: null },
     visibility:  { type: String, enum: ['public', 'private', 'shared'], default: 'public' },
     shared_with: { type: [String], default: [] },
+    parentId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Document', default: null, index: true },
+    branchName:  { type: String, default: 'main' },
+    /** Collaborative whiteboard strokes: [{ points: [[x,y]...], color, width }] */
+    whiteboard:  { type: mongoose.Schema.Types.Mixed, default: [] },
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
@@ -25,6 +29,7 @@ documentSchema.set('toJSON', {
   transform(doc, ret) {
     ret.id = ret._id.toString()
     delete ret._id
+    ret.parentId = ret.parentId ? ret.parentId.toString() : null
   },
 })
 
@@ -36,25 +41,73 @@ const Document = {
   async findAll(owner = null) {
     const filter = owner ? { owner } : {}
     return DocumentModel.find(filter).sort({ updated_at: -1 }).lean().then(docs =>
-      docs.map(d => ({ ...d, id: d._id.toString(), _id: undefined, __v: undefined }))
+      docs.map(d => ({
+        ...d,
+        id: d._id.toString(),
+        parentId: d.parentId ? d.parentId.toString() : null,
+        _id: undefined,
+        __v: undefined,
+      }))
     )
   },
 
   async findById(id) {
     const doc = await DocumentModel.findById(id).lean()
     if (!doc) return null
-    return { ...doc, id: doc._id.toString(), _id: undefined, __v: undefined }
+    return {
+      ...doc,
+      id: doc._id.toString(),
+      parentId: doc.parentId ? doc.parentId.toString() : null,
+      _id: undefined,
+      __v: undefined,
+    }
   },
 
-  async create({ title, content, owner, visibility }) {
+  async create({ title, content, owner, visibility, parentId, branchName, shared_with }) {
     const doc = await DocumentModel.create({
       title: title || 'Untitled Document',
       content: content || '',
       owner: owner || null,
       visibility: visibility || 'public',
-      shared_with: [],
+      shared_with: shared_with ?? [],
+      parentId: parentId || null,
+      branchName: branchName || 'main',
     })
     return doc.toJSON()
+  },
+
+  /** Child documents (branches) of a parent */
+  async findBranches(parentId) {
+    const docs = await DocumentModel.find({ parentId })
+      .sort({ updated_at: -1 })
+      .select('title branchName updated_at owner visibility')
+      .lean()
+    return docs.map((d) => ({
+      ...d,
+      id: d._id.toString(),
+      parentId: d.parentId?.toString(),
+      _id: undefined,
+    }))
+  },
+
+  /** Walk parent chain from document up to root */
+  async getLineage(id) {
+    const chain = []
+    let currentId = id
+    const seen = new Set()
+    while (currentId && !seen.has(currentId.toString())) {
+      seen.add(currentId.toString())
+      const doc = await DocumentModel.findById(currentId).select('title parentId branchName').lean()
+      if (!doc) break
+      chain.push({
+        id: doc._id.toString(),
+        title: doc.title,
+        branchName: doc.branchName || 'main',
+        parentId: doc.parentId?.toString() || null,
+      })
+      currentId = doc.parentId
+    }
+    return chain
   },
 
   async update(id, updates) {
@@ -80,6 +133,20 @@ const Document = {
   async getContent(id) {
     const doc = await DocumentModel.findById(id).select('content').lean()
     return doc?.content || null
+  },
+
+  async getWhiteboard(id) {
+    const doc = await DocumentModel.findById(id).select('whiteboard').lean()
+    const wb = doc?.whiteboard
+    return Array.isArray(wb) ? wb : []
+  },
+
+  async updateWhiteboard(id, strokes) {
+    await DocumentModel.findByIdAndUpdate(id, {
+      whiteboard: Array.isArray(strokes) ? strokes : [],
+      updated_at: new Date(),
+    })
+    return true
   },
 
   async share(id, sharedWith) {
@@ -115,7 +182,13 @@ const Document = {
     const docs = await DocumentModel.find({ shared_with: userName })
       .sort({ updated_at: -1 })
       .lean()
-    return docs.map(d => ({ ...d, id: d._id.toString(), _id: undefined, __v: undefined }))
+    return docs.map(d => ({
+      ...d,
+      id: d._id.toString(),
+      parentId: d.parentId ? d.parentId.toString() : null,
+      _id: undefined,
+      __v: undefined,
+    }))
   },
 }
 

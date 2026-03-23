@@ -1,0 +1,40 @@
+{
+  "name": "collab-docs-sync",
+  "displayName": "Collab Docs Sync",
+  "description": "Pull/push Markdown with the Collab-Docs web API (same backend as the browser client).",
+  "version": "0.1.0",
+  "publisher": "collab-docs",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onCommand:collabDocs.pullFromServer", "onCommand:collabDocs.pushToServer"],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "collabDocs.pullFromServer",
+        "title": "Collab Docs: Pull document from server"
+      },
+      {
+        "command": "collabDocs.pushToServer",
+        "title": "Collab Docs: Push active file to server"
+      }
+    ],
+    "configuration": {
+      "title": "Collab Docs",
+      "properties": {
+        "collabDocs.apiBase": {
+          "type": "string",
+          "default": "http://localhost:3001",
+          "description": "Base URL of the Collab-Docs API (no trailing slash)."
+        },
+        "collabDocs.documentId": {
+          "type": "string",
+          "default": "",
+          "description": "MongoDB ObjectId of the document to sync."
+        }
+      }
+    }
+  }
+}

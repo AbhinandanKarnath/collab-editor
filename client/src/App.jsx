@@ -96,6 +96,7 @@ function App() {
           documentId={currentDocId}
           user={user}
           onUpdateTitle={fetchDocuments}
+          onNavigateToDocument={(id) => setCurrentDocId(id)}
         />
       )
     }

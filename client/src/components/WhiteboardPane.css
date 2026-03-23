@@ -1,0 +1,30 @@
+.whiteboard-pane {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  min-height: 0;
+  padding: 12px 16px;
+}
+
+.whiteboard-pane.active {
+  display: flex;
+  min-height: 45vh;
+  flex: 1;
+}
+
+.whiteboard-hint {
+  font-size: 12px;
+  color: var(--gray-600);
+  margin: 0 0 8px;
+}
+
+.whiteboard-canvas {
+  flex: 1;
+  width: 100%;
+  min-height: 320px;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  cursor: crosshair;
+  touch-action: none;
+  background: var(--gray-50);
+}

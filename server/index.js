@@ -9,7 +9,7 @@ import os from 'os'
 import { testConnection } from './config/db.js'
 
 // Routes
-import documentRoutes from './routes/documents.js'
+import createDocumentRoutes from './routes/documents.js'
 import userRoutes from './routes/users.js'
 
 // Socket handlers
@@ -23,27 +23,7 @@ dotenv.config()
 const app = express()
 const httpServer = createServer(app)
 
-// Middleware
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}))
-app.use(express.json())
-
-// ═══════════════════════════════════════════
-//  Routes
-// ═══════════════════════════════════════════
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() })
-})
-
-app.use('/api/documents', documentRoutes)
-app.use('/api/users', userRoutes)
-
-// ═══════════════════════════════════════════
-//  Socket.io Setup
-// ═══════════════════════════════════════════
+// Socket.io (needed by document routes for snapshot restore broadcast)
 const io = new Server(httpServer, {
   cors: {
     origin: '*',
@@ -53,6 +33,24 @@ const io = new Server(httpServer, {
 })
 
 registerSocketHandlers(io)
+
+// Middleware
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}))
+app.use(express.json({ limit: '32mb' }))
+
+// ═══════════════════════════════════════════
+//  Routes
+// ═══════════════════════════════════════════
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
+app.use('/api/documents', createDocumentRoutes(io))
+app.use('/api/users', userRoutes)
 
 // ═══════════════════════════════════════════
 //  Start Server

@@ -2,6 +2,95 @@
   flex: 1;
 }
 
+.doclist-content {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 16px 24px 32px;
+}
+
+.doclist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.doclist-header h1 {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--gray-900);
+}
+
+.doc-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius-full);
+  background: var(--white);
+  border: 1px solid var(--gray-300);
+  min-width: 220px;
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--gray-900);
+  width: 160px;
+}
+
+.search-box input::placeholder {
+  color: var(--gray-500);
+}
+
+.search-icon {
+  color: var(--gray-500);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: var(--blue-600);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: var(--shadow-1);
+  white-space: nowrap;
+}
+
+.btn-primary:hover {
+  background: var(--blue-500);
+}
+
+@media (max-width: 768px) {
+  .doclist-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .doc-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .search-box {
+    flex: 1;
+  }
+}
+
 /* Hero */
 .doclist-hero {
   background: var(--gray-100);
@@ -129,12 +218,16 @@
   cursor: pointer;
   border-radius: var(--radius) var(--radius) 0 0;
   overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
 .doc-card-preview-lines {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
 }
 
 .doc-card-preview-lines .line {
@@ -170,6 +263,25 @@
   white-space: nowrap;
   cursor: pointer;
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.doc-branch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--blue-700);
+  background: var(--blue-50);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
 }
 
 .doc-card-title:hover {
@@ -178,6 +290,30 @@
 
 .doc-card-actions {
   position: relative;
+}
+
+.doc-card-ai-row {
+  margin-bottom: 8px;
+}
+
+.doc-ai-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--gray-200);
+  background: var(--gray-50);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gray-700);
+  cursor: pointer;
+}
+
+.doc-ai-btn:hover {
+  background: var(--blue-50);
+  border-color: var(--blue-100);
+  color: var(--blue-600);
 }
 
 .doc-menu-btn {
@@ -302,7 +438,7 @@
 }
 
 /* ====== Share Modal ====== */
-.share-modal {
+.doclist-page .share-modal {
   background: var(--white);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-3);
@@ -312,14 +448,14 @@
   overflow-y: auto;
 }
 
-.share-modal-header {
+.doclist-page .share-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px 12px;
 }
 
-.share-modal-header h3 {
+.doclist-page .share-modal-header h3 {
   font-size: 18px;
   font-weight: 500;
   color: var(--gray-900);
@@ -328,7 +464,7 @@
   white-space: nowrap;
 }
 
-.share-close {
+.doclist-page .share-close {
   width: 36px;
   height: 36px;
   border: none;
@@ -342,11 +478,11 @@
   flex-shrink: 0;
 }
 
-.share-close:hover {
+.doclist-page .share-close:hover {
   background: var(--gray-100);
 }
 
-.share-search {
+.doclist-page .share-search {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -357,11 +493,11 @@
   transition: border-color 0.2s;
 }
 
-.share-search:focus-within {
+.doclist-page .share-search:focus-within {
   border-color: var(--blue-600);
 }
 
-.share-search input {
+.doclist-page .share-search input {
   flex: 1;
   border: none;
   outline: none;
@@ -369,15 +505,15 @@
   color: var(--gray-900);
 }
 
-.share-search input::placeholder {
+.doclist-page .share-search input::placeholder {
   color: var(--gray-500);
 }
 
-.share-section {
+.doclist-page .share-section {
   padding: 16px 24px;
 }
 
-.share-section h4 {
+.doclist-page .share-section h4 {
   font-size: 12px;
   font-weight: 500;
   color: var(--gray-500);
@@ -386,13 +522,13 @@
   margin-bottom: 10px;
 }
 
-.share-user-list {
+.doclist-page .share-user-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.share-user-item {
+.doclist-page .share-user-item {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -401,11 +537,11 @@
   transition: background 0.1s;
 }
 
-.share-user-item:hover {
+.doclist-page .share-user-item:hover {
   background: var(--gray-50);
 }
 
-.share-user-avatar {
+.doclist-page .share-user-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -419,14 +555,14 @@
   flex-shrink: 0;
 }
 
-.share-user-name {
+.doclist-page .share-user-name {
   flex: 1;
   font-size: 14px;
   color: var(--gray-900);
 }
 
-.share-add-btn,
-.share-remove-btn {
+.doclist-page .share-add-btn,
+.doclist-page .share-remove-btn {
   padding: 6px 14px;
   border: none;
   border-radius: var(--radius-full);
@@ -435,34 +571,34 @@
   transition: background 0.15s;
 }
 
-.share-add-btn {
+.doclist-page .share-add-btn {
   background: var(--blue-600);
   color: white;
 }
 
-.share-add-btn:hover {
+.doclist-page .share-add-btn:hover {
   background: var(--blue-500);
 }
 
-.share-remove-btn {
+.doclist-page .share-remove-btn {
   background: var(--gray-100);
   color: var(--gray-700);
 }
 
-.share-remove-btn:hover {
+.doclist-page .share-remove-btn:hover {
   background: var(--red-50);
   color: var(--red-600);
 }
 
-.share-empty {
+.doclist-page .share-empty {
   text-align: center;
   color: var(--gray-500);
   font-size: 13px;
   padding: 12px;
 }
 
-/* Modal overlay - used by share modal */
-.modal-overlay {
+/* Modal overlay - used by share modal (scoped to document list) */
+.doclist-page .modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
@@ -471,4 +607,99 @@
   justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(4px);
+}
+
+/* Generic modal styles (used by AI summary & keywords, scoped to document list) */
+.doclist-page .modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  backdrop-filter: blur(4px);
+}
+
+.doclist-page .modal-content {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  max-width: 640px;
+  width: 95%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.doclist-page .modal-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.doclist-page .modal-header h2 {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--gray-900);
+  display: flex;
+  align-items: center;
+}
+
+.doclist-page .modal-body {
+  padding: 20px;
+}
+
+.doclist-page .modal-actions {
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--gray-200);
+  display: flex;
+  gap: 8px;
+}
+
+.doclist-page .btn {
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--gray-300);
+  background: var(--gray-50);
+  font-size: 13px;
+  color: var(--gray-800);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.doclist-page .btn:hover {
+  background: var(--gray-100);
+  border-color: var(--gray-400);
+}
+
+.doclist-page .btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.doclist-page .btn-icon:hover {
+  background: var(--gray-100);
+  color: var(--gray-900);
+}
+
+.doclist-page .spinning-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
